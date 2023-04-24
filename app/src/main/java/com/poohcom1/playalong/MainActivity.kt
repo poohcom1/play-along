@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.poohcom1.playalong.ui.components.Player
+import com.poohcom1.playalong.ui.scenes.SongController
 import com.poohcom1.playalong.ui.theme.PlayAlongTheme
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
-                    Container()
+                    MainContainer()
                 }
             }
         }
@@ -66,10 +66,9 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Container(modifier: Modifier = Modifier) {
+fun MainContainer(modifier: Modifier = Modifier) {
     var loading by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
-
     var videoInfo by remember { mutableStateOf<VideoInfo?>(null) }
 
     val composableScope = rememberCoroutineScope()
@@ -77,7 +76,7 @@ fun Container(modifier: Modifier = Modifier) {
     Column {
         if (loading) {
             Text(text = "Loading...")
-        } else videoInfo?.let { Player(info = it, modifier = modifier) }
+        } else videoInfo?.let { SongController(info = it, modifier = modifier) }
 
         Row() {
             Button(onClick = {
@@ -103,6 +102,7 @@ fun Container(modifier: Modifier = Modifier) {
                         showPopup = false
                         loading = true
 
+                        // Youtube DL Coroutine
                         composableScope.launch(Dispatchers.IO) {
                             videoInfo = try {
                                 val getUrlRequest = YoutubeDLRequest(youtubeUrl)
@@ -129,6 +129,6 @@ fun Container(modifier: Modifier = Modifier) {
 @Composable
 private fun Preview() {
     PlayAlongTheme {
-        Container()
+        MainContainer()
     }
 }
