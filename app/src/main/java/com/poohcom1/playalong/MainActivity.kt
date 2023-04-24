@@ -1,28 +1,46 @@
 package com.poohcom1.playalong
 
-import android.net.Uri
 import android.os.Bundle
 import android.os.StrictMode
-import android.os.StrictMode.ThreadPolicy
 import android.util.Log
-import android.widget.Button
-import android.widget.EditText
-import android.widget.VideoView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import com.poohcom1.playalong.ui.components.Player
+import com.poohcom1.playalong.ui.theme.PlayAlongTheme
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import com.yausername.youtubedl_android.mapper.VideoInfo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-
-class MainActivity : AppCompatActivity() {
-
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
         // TODO: wtf is this for?
-        val policy = ThreadPolicy.Builder().permitAll().build()
+        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
 
         try {
@@ -33,19 +51,84 @@ class MainActivity : AppCompatActivity() {
             Log.e("YoutubeDL", e.toString())
         }
 
-        val videoView: VideoView = findViewById(R.id.videoView)
-
-        val urlInput: EditText = findViewById(R.id.urlInput)
-        val urlSubmitButton: Button = findViewById(R.id.urlSubmitButton)
-
-        urlSubmitButton.setOnClickListener {
-            val getUrlRequest = YoutubeDLRequest(urlInput.text.toString())
-            getUrlRequest.addOption("-f", "best")
-
-            val streamInfo: VideoInfo = YoutubeDL.getInstance().getInfo(getUrlRequest)
-            Log.d("YoutubeDL", streamInfo.url)
-            videoView.setVideoURI(Uri.parse(streamInfo.url))
-            videoView.start()
+        setContent {
+            PlayAlongTheme {
+                // A surface container using the 'background' color from the theme
+                Surface(
+                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
+                ) {
+                    Container()
+                }
+            }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Container(modifier: Modifier = Modifier) {
+    var loading by remember { mutableStateOf(false) }
+    var showPopup by remember { mutableStateOf(false) }
+
+    var videoInfo by remember { mutableStateOf<VideoInfo?>(null) }
+
+    val composableScope = rememberCoroutineScope()
+
+    Column {
+        if (loading) {
+            Text(text = "Loading...")
+        } else videoInfo?.let { Player(info = it, modifier = modifier) }
+
+        Row() {
+            Button(onClick = {
+                showPopup = true
+            }) {
+                Text(text = "Select song")
+            }
+        }
+    }
+    if (showPopup) {
+        var youtubeUrl by remember { mutableStateOf("") }
+
+        Dialog(onDismissRequest = { showPopup = false }) {
+            Card() {
+                Column(Modifier.padding(16.dp)) {
+                    TextField(
+                        value = youtubeUrl,
+                        onValueChange = { youtubeUrl = it },
+                        placeholder = { Text(text = "Enter URL") },
+                        singleLine = true,
+                    )
+                    Button(onClick = {
+                        showPopup = false
+                        loading = true
+
+                        composableScope.launch(Dispatchers.IO) {
+                            videoInfo = try {
+                                val getUrlRequest = YoutubeDLRequest(youtubeUrl)
+                                getUrlRequest.addOption("-f", "best")
+
+                                YoutubeDL.getInstance().getInfo(getUrlRequest)
+                            } catch (e: Exception) {
+                                null
+                            }
+                            loading = false
+                        }
+
+                    }) {
+                        Text(text = "Submit")
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Preview(showBackground = true)
+@Composable
+private fun Preview() {
+    PlayAlongTheme {
+        Container()
     }
 }
