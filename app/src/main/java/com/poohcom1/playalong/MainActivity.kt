@@ -3,6 +3,7 @@ package com.poohcom1.playalong
 import android.os.Bundle
 import android.os.StrictMode
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -71,6 +73,7 @@ fun MainContainer(modifier: Modifier = Modifier) {
     var showPopup by remember { mutableStateOf(false) }
     var videoInfo by remember { mutableStateOf<VideoInfo?>(null) }
 
+    val context = LocalContext.current
     val composableScope = rememberCoroutineScope()
 
     Column {
@@ -107,9 +110,11 @@ fun MainContainer(modifier: Modifier = Modifier) {
                             videoInfo = try {
                                 val getUrlRequest = YoutubeDLRequest(youtubeUrl)
                                 getUrlRequest.addOption("-f", "best")
+                                getUrlRequest.addOption("--no-playlist")
 
                                 YoutubeDL.getInstance().getInfo(getUrlRequest)
                             } catch (e: Exception) {
+                                Toast.makeText(context, e.toString(), Toast.LENGTH_LONG).show()
                                 null
                             }
                             loading = false
