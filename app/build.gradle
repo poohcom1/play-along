@@ -79,4 +79,6 @@ dependencies {
     androidTestImplementation platform('androidx.compose:compose-bom:2022.10.00')
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
+    // Components
+    implementation 'com.google.android.exoplayer:exoplayer:2.18.6'
 }

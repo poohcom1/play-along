@@ -22,14 +22,17 @@ fun SongController(info: VideoInfo, modifier: Modifier = Modifier) {
     var start: Float by remember { mutableStateOf(0f) }
     var end: Float by remember { mutableStateOf(info.duration.toFloat()) }
 
+    var loopRange: LongRange by remember { mutableStateOf(0L..info.duration * 1000) }
+
     Column(
         Modifier.padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        VideoPlayer(info.url!!)
+        VideoPlayer(info.url!!, loopRange, 120f)
         RangeSlider(
             value = start..end,
             onValueChange = { start = it.start; end = it.endInclusive },
+            onValueChangeFinished = { loopRange = start.toLong() * 1000..end.toLong() * 1000 },
             valueRange = 0f..info.duration.toFloat(),
             steps = info.duration,
         )
