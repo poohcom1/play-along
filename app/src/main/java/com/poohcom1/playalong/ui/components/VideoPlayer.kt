@@ -15,7 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 @Composable
-fun VideoPlayer(url: String, range: LongRange, tempo: Float) {
+fun VideoPlayer(url: String, range: LongRange, tempo: Float, seekToPosition: (Long) -> Unit) {
     val context = LocalContext.current
 
     val measureDelay = 60f / tempo * 1000
@@ -54,6 +54,9 @@ fun VideoPlayer(url: String, range: LongRange, tempo: Float) {
     ) {
         onDispose { exoplayer.release() }
     }
+
+
+    seekToPosition.invoke(exoplayer.currentPosition)
 }
 
 //@Preview(showBackground = true)
