@@ -28,6 +28,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.poohcom1.playalong.models.ControlPanelSettings
+import com.poohcom1.playalong.ui.scenes.ControlPanel
 import com.poohcom1.playalong.ui.scenes.SongController
 import com.poohcom1.playalong.ui.theme.PlayAlongTheme
 import com.yausername.youtubedl_android.YoutubeDL
@@ -68,18 +70,26 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainContainer(modifier: Modifier = Modifier) {
+fun MainContainer() {
+    // Rendering
     var loading by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
     var videoInfo by remember { mutableStateOf<VideoInfo?>(null) }
+
+    // States
+    var controlPanelSettings by remember { mutableStateOf(ControlPanelSettings()) }
 
     val context = LocalContext.current
     val composableScope = rememberCoroutineScope()
 
     Column {
+        ControlPanel(
+            setting = controlPanelSettings,
+            onSettingChanged = { controlPanelSettings = it })
+
         if (loading) {
             Text(text = "Loading...")
-        } else videoInfo?.let { SongController(info = it, modifier = modifier) }
+        } else videoInfo?.let { SongController(info = it, controlPanelSettings) }
 
         Row() {
             Button(onClick = {

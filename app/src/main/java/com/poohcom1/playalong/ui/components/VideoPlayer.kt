@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -21,8 +22,7 @@ fun VideoPlayer(url: String, range: LongRange, tempo: Float) {
     val measureDelay = 60f / tempo * 1000
 
     val exoplayer = remember {
-        ExoPlayer.Builder(context)
-            .build()
+        ExoPlayer.Builder(context).build()
     }
 
     exoplayer.stop()
@@ -46,11 +46,14 @@ fun VideoPlayer(url: String, range: LongRange, tempo: Float) {
     }
 
     DisposableEffect(
-        AndroidView(factory = {
-            StyledPlayerView(context).apply {
-                player = exoplayer
+        AndroidView(
+            factory = {
+                StyledPlayerView(context).apply {
+                    player = exoplayer
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                }
             }
-        })
+        )
     ) {
         onDispose { exoplayer.release() }
     }
