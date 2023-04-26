@@ -17,15 +17,11 @@
         android:theme="@style/Theme.PlayAlong"
         tools:targetApi="31">
         <activity
-            android:name=".ui.components.Player"
-            android:exported="false"
-            android:label="@string/title_activity_player"
-            android:theme="@style/Theme.PlayAlong" />
-        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/title_activity_main"
-            android:theme="@style/Theme.PlayAlong">
+            android:theme="@style/Theme.PlayAlong"
+            android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
