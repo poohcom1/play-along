@@ -1,11 +1,9 @@
 package com.poohcom1.playalong.ui.components
 
 import android.util.Log
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
@@ -15,7 +13,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 @Composable
-fun VideoPlayer(url: String, range: LongRange, tempo: Float, seekToPosition: (Long) -> Unit) {
+fun VideoPlayer(url: String, range: LongRange, tempo: Float, currentPosition: MutableState<Long>) {
     val context = LocalContext.current
 
     val measureDelay = 60f / tempo * 1000
@@ -55,8 +53,9 @@ fun VideoPlayer(url: String, range: LongRange, tempo: Float, seekToPosition: (Lo
         onDispose { exoplayer.release() }
     }
 
-
-    seekToPosition.invoke(exoplayer.currentPosition)
+    LaunchedEffect(Unit) {
+        currentPosition.value = exoplayer.currentPosition
+    }
 }
 
 //@Preview(showBackground = true)
