@@ -14,10 +14,14 @@ import kotlinx.coroutines.withContext
 
 @Composable
 <<<<<<< HEAD
+<<<<<<< HEAD
 fun VideoPlayer(url: String, range: LongRange, tempo: Float) {
 =======
 fun VideoPlayer(url: String, range: LongRange, tempo: Float, currentPosition: MutableState<Long>) {
 >>>>>>> 20462c7 (real-time update without lambda)
+=======
+fun VideoPlayer(url: String, range: LongRange, tempo: Float, currentPosition: MutableState<Long>) {
+>>>>>>> 9eef7f4e7503d9e3f5b08572144713be457f92ef
     val context = LocalContext.current
 
     val measureDelay = 60f / tempo * 1000
@@ -57,12 +61,25 @@ fun VideoPlayer(url: String, range: LongRange, tempo: Float, currentPosition: Mu
         onDispose { exoplayer.release() }
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
     LaunchedEffect(Unit) {
         currentPosition.value = exoplayer.currentPosition
     }
 >>>>>>> 20462c7 (real-time update without lambda)
+=======
+
+    LaunchedEffect(currentPosition) {
+        currentPosition.value = exoplayer.currentPosition
+    }
+
+    LaunchedEffect(currentPosition.value) {
+        if (currentPosition.value in range) {
+            exoplayer.seekTo(currentPosition.value)
+        }
+    }
+>>>>>>> 9eef7f4e7503d9e3f5b08572144713be457f92ef
 }
 
 //@Preview(showBackground = true)
