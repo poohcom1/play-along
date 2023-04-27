@@ -19,7 +19,9 @@ import com.yausername.youtubedl_android.mapper.VideoInfo
 fun SongController(info: VideoInfo, modifier: Modifier = Modifier) {
     var start: Float by remember { mutableStateOf(0f) }
     var end: Float by remember { mutableStateOf(info.duration.toFloat()) }
-    var currentPosition: Long by remember { mutableStateOf(0L)}
+    var currentPosition by remember { mutableStateOf(0L) }
+
+    val videoURL = info.url
 
     var loopRange: LongRange by remember { mutableStateOf(0L..info.duration * 1000) }
 
@@ -27,14 +29,15 @@ fun SongController(info: VideoInfo, modifier: Modifier = Modifier) {
         Modifier.padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        VideoPlayer(info.url!!, loopRange, 120f) { position ->
-            currentPosition = position
+        if (videoURL != null) {
+            VideoPlayer(videoURL, loopRange, 120f, remember { mutableStateOf(currentPosition) })
         }
         RangeSlider(
             value = start..end,
-            onValueChange = {
-                start = it.start
-                end = it.endInclusive
+            onValueChange = { range ->
+                start = range.start
+                end = range.endInclusive
+                currentPosition = (range.start * 1000).toLong()
                             },
             valueRange = 0f..info.duration.toFloat(),
             steps = info.duration,
@@ -42,7 +45,6 @@ fun SongController(info: VideoInfo, modifier: Modifier = Modifier) {
 
         LaunchedEffect(start, end) {
             loopRange = start.toLong() * 1000..end.toLong() * 1000
-            currentPosition = loopRange.first
         }
     }
 }

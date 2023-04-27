@@ -53,8 +53,15 @@ fun VideoPlayer(url: String, range: LongRange, tempo: Float, currentPosition: Mu
         onDispose { exoplayer.release() }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(currentPosition) {
         currentPosition.value = exoplayer.currentPosition
+    }
+
+    LaunchedEffect(currentPosition.value) {
+        if (currentPosition.value in range) {
+            exoplayer.seekTo(currentPosition.value)
+            exoplayer.playWhenReady = true
+        }
     }
 }
 
