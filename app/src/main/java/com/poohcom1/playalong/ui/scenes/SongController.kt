@@ -34,11 +34,10 @@ fun SongController(info: VideoInfo, modifier: Modifier = Modifier) {
         }
         RangeSlider(
             value = start..end,
-            onValueChange = { range ->
-                start = range.start
-                end = range.endInclusive
-                currentPosition = (range.start * 1000).toLong()
-                            },
+            onValueChange = {
+                start = it.start
+                end = it.endInclusive
+            },
             valueRange = 0f..info.duration.toFloat(),
             steps = info.duration,
         )
