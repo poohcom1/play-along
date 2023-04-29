@@ -22,13 +22,18 @@ fun VideoPlayer(
     loopRange: LongRange,
     tempo: Float,
     playing: Boolean,
-    onPlayingSet: (Boolean) -> Unit
+    onPlayingSet: (Boolean) -> Unit,
+    onPlayerSet: (ExoPlayer) -> Unit = {}
 ) {
     val context = LocalContext.current
     val measureDelay = 60f / tempo * 1000
 
     val exoplayer = remember {
         ExoPlayer.Builder(context).build()
+    }
+
+    LaunchedEffect(exoplayer) {
+        onPlayerSet(exoplayer)
     }
 
     // On url change

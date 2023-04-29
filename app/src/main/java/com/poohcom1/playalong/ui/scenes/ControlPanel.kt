@@ -14,10 +14,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.poohcom1.playalong.models.ControlPanelSettings
+import com.poohcom1.playalong.viewmodels.UiState
 
 @Composable
-fun ControlPanel(setting: ControlPanelSettings, onSettingChanged: (ControlPanelSettings) -> Unit) {
+fun ControlPanel(uiState: UiState, onRootStateChanged: (UiState) -> Unit) {
     Row(
         Modifier
             .height(50.dp)
@@ -30,8 +30,8 @@ fun ControlPanel(setting: ControlPanelSettings, onSettingChanged: (ControlPanelS
         }
         Row(horizontalArrangement = Arrangement.Center) {
             IconButton(modifier = Modifier.weight(1f),
-                onClick = { onSettingChanged(setting.copy(playing = !setting.playing)) }) {
-                if (setting.playing) {
+                onClick = { onRootStateChanged(uiState.copy(playing = !uiState.playing)) }) {
+                if (uiState.playing) {
                     Icon(Icons.Filled.Pause, contentDescription = "Pause")
                 } else {
                     Icon(Icons.Filled.PlayArrow, contentDescription = "Play")
