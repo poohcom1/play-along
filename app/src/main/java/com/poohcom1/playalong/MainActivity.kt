@@ -1,5 +1,6 @@
 package com.poohcom1.playalong
 
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Looper
 import android.os.StrictMode
@@ -33,6 +34,7 @@ import com.poohcom1.playalong.models.ControlPanelSettings
 import com.poohcom1.playalong.ui.scenes.ControlPanel
 import com.poohcom1.playalong.ui.scenes.PlayerController
 import com.poohcom1.playalong.ui.theme.PlayAlongTheme
+import com.poohcom1.playalong.utils.TempoTapCalculator
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
 import com.yausername.youtubedl_android.YoutubeDLRequest
@@ -72,7 +74,10 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContainer() {
-    // Rendering
+    val context = LocalContext.current
+    val composableScope = rememberCoroutineScope()
+
+    // Rendering states
     var loading by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
     var videoInfo by remember { mutableStateOf<VideoInfo?>(null) }
@@ -80,20 +85,18 @@ fun MainContainer() {
     // States
     var controlPanelSettings by remember { mutableStateOf(ControlPanelSettings()) }
 
-    val context = LocalContext.current
-    val composableScope = rememberCoroutineScope()
+    // Dependencies
+    val tempoTapCalculator = remember { TempoTapCalculator(2000, true) }
+    val mediaPlayer = remember { MediaPlayer.create(context, R.raw.metronome_click) }
 
     Column {
-        ControlPanel(
-            setting = controlPanelSettings,
-            onSettingChanged = { controlPanelSettings = it }
-        )
+        ControlPanel(setting = controlPanelSettings,
+            onSettingChanged = { controlPanelSettings = it })
 
         if (loading) {
             Text(text = "Loading...")
-        } else videoInfo?.let {
-            PlayerController(
-                info = it,
+        } else videoInfo?.let { info ->
+            PlayerController(info = info,
                 controlPanelSettings,
                 onSettingsChange = { controlPanelSettings = it })
         }
