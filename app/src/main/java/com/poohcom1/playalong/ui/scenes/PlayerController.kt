@@ -21,51 +21,52 @@ import com.yausername.youtubedl_android.mapper.VideoInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerController(
-    info: VideoInfo, uiState: UiState, onRootStateChanged: (UiState) -> Unit
-) {
-    var loopRange: LongRange by remember { mutableStateOf(0L..info.duration * 1000) }
+fun PlayerController(info: VideoInfo, uiState: UiState, onRootStateChanged: (UiState) -> Unit) {
+  var loopRange: LongRange by remember { mutableStateOf(0L..info.duration * 1000) }
 
-    var isSeeking by remember { mutableStateOf(false) }
-    var wasPlayingBeforeSeek by remember { mutableStateOf(false) }
+  var isSeeking by remember { mutableStateOf(false) }
+  var wasPlayingBeforeSeek by remember { mutableStateOf(false) }
 
-    Column(
-        Modifier.padding(horizontal = 128.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+  Column(
+      Modifier.padding(horizontal = 128.dp, vertical = 16.dp),
+      horizontalAlignment = Alignment.CenterHorizontally) {
         Column {
-            VideoPlayer(info.url!!, loopRange, 120f, playing = uiState.playing, onPlayingSet = {
-                onRootStateChanged(uiState.copy(playing = it))
-            }, onPlayerSet = { onRootStateChanged(uiState.copy(player = it)) })
-            Spacer(Modifier.height(16.dp))
-            RangeSlider(
-                value = (loopRange.first / 1000).toFloat()..(loopRange.last / 1000).toFloat(),
-                onValueChange = {
-                    if (!isSeeking) {
-                        isSeeking = true
-                        if (uiState.playing) {
-                            wasPlayingBeforeSeek = true
-                            onRootStateChanged(uiState.copy(playing = false))
-                        }
-                    }
-                    loopRange = it.start.toLong() * 1000..it.endInclusive.toLong() * 1000
-                },
-                valueRange = 0f..info.duration.toFloat(),
-                onValueChangeFinished = {
-                    isSeeking = false
-                    if (wasPlayingBeforeSeek) {
-                        wasPlayingBeforeSeek = false
-                        onRootStateChanged(uiState.copy(playing = true))
-                    }
-                },
-                steps = info.duration,
-            )
+          VideoPlayer(
+              info.url!!,
+              loopRange,
+              120f,
+              playing = uiState.playing,
+              onPlayingSet = { onRootStateChanged(uiState.copy(playing = it)) },
+              onPlayerSet = { onRootStateChanged(uiState.copy(player = it)) })
+          Spacer(Modifier.height(16.dp))
+          RangeSlider(
+              value = (loopRange.first / 1000).toFloat()..(loopRange.last / 1000).toFloat(),
+              onValueChange = {
+                if (!isSeeking) {
+                  isSeeking = true
+                  if (uiState.playing) {
+                    wasPlayingBeforeSeek = true
+                    onRootStateChanged(uiState.copy(playing = false))
+                  }
+                }
+                loopRange = it.start.toLong() * 1000..it.endInclusive.toLong() * 1000
+              },
+              valueRange = 0f..info.duration.toFloat(),
+              onValueChangeFinished = {
+                isSeeking = false
+                if (wasPlayingBeforeSeek) {
+                  wasPlayingBeforeSeek = false
+                  onRootStateChanged(uiState.copy(playing = true))
+                }
+              },
+              steps = info.duration,
+          )
         }
-    }
+      }
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun Preview() {
-    PlayerController(VideoInfo(), UiState(), onRootStateChanged = { })
+  PlayerController(VideoInfo(), UiState(), onRootStateChanged = {})
 }

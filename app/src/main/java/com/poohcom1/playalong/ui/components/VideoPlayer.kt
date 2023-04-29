@@ -1,6 +1,5 @@
 package com.poohcom1.playalong.ui.components
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -23,78 +22,68 @@ fun VideoPlayer(
     tempo: Float,
     playing: Boolean,
     onPlayingSet: (Boolean) -> Unit,
-    onPlayerSet: (ExoPlayer) -> Unit = {}
+    onPlayerSet: (ExoPlayer?) -> Unit = {}
 ) {
-    val context = LocalContext.current
-    val measureDelay = 60f / tempo * 1000
+  val context = LocalContext.current
+  val measureDelay = 60f / tempo * 1000
 
-    val exoplayer = remember {
-        ExoPlayer.Builder(context).build()
-    }
+  val exoplayer = remember { ExoPlayer.Builder(context).build() }
 
-    LaunchedEffect(exoplayer) {
-        onPlayerSet(exoplayer)
-    }
+  LaunchedEffect(exoplayer) { onPlayerSet(exoplayer) }
 
-    // On url change
-    LaunchedEffect(url) {
-        exoplayer.setMediaItem(MediaItem.fromUri(url))
-        exoplayer.prepare()
-        exoplayer.repeatMode = ExoPlayer.REPEAT_MODE_ONE
-    }
+  // On url change
+  LaunchedEffect(url) {
+    exoplayer.setMediaItem(MediaItem.fromUri(url))
+    exoplayer.prepare()
+    exoplayer.repeatMode = ExoPlayer.REPEAT_MODE_ONE
+  }
 
-    // On loop section change
-    LaunchedEffect(loopRange) {
-        exoplayer.seekTo(loopRange.first)
+  // On loop section change
+  LaunchedEffect(loopRange) {
+    exoplayer.seekTo(loopRange.first)
 
-        withContext(Dispatchers.Main) {
-            while (true) {
-                if (exoplayer.currentPosition !in loopRange) {
-                    exoplayer.seekTo(loopRange.first)
-                    Log.d("VideoPlayer", "Seeking to ${loopRange.first}...")
-                }
-
-                delay(measureDelay.toLong())
-            }
+    withContext(Dispatchers.Main) {
+      while (true) {
+        if (exoplayer.currentPosition !in loopRange) {
+          exoplayer.seekTo(loopRange.first)
         }
-    }
 
-    // On play/pause
-    LaunchedEffect(playing) {
-        exoplayer.addListener(object : Player.Listener {
-            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-                onPlayingSet(playWhenReady)
-            }
+        delay(measureDelay.toLong())
+      }
+    }
+  }
+
+  // On play/pause
+  LaunchedEffect(playing) {
+    exoplayer.addListener(
+        object : Player.Listener {
+          override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            onPlayingSet(playWhenReady)
+          }
         })
 
-        if (playing) {
-            exoplayer.play()
-        } else {
-            exoplayer.pause()
-        }
+    if (playing) {
+      exoplayer.play()
+    } else {
+      exoplayer.pause()
     }
+  }
 
-    // Render
-    DisposableEffect(
-        AndroidView(
-            factory = {
-                StyledPlayerView(context).apply {
-                    player = exoplayer
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                    setShowNextButton(false)
-                    setShowPreviousButton(false)
-                }
+  // Render
+  DisposableEffect(
+      AndroidView(
+          factory = {
+            StyledPlayerView(context).apply {
+              player = exoplayer
+              resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+              setShowNextButton(false)
+              setShowPreviousButton(false)
             }
-        )
-    ) {
-        onDispose { exoplayer.release() }
-    }
+          })) {
+        onDispose {
+          exoplayer.release()
+          onPlayerSet(null)
+          onPlayingSet(false)
+        }
+      }
 }
-
-//@Preview(showBackground = true)
-//@Composable
-//private fun Preview() {
-//    PlayAlongTheme {
-//        VideoPlayer("https://www.youtube.com/watch?v=te6JsCBrZn0")
-//    }
-//}
