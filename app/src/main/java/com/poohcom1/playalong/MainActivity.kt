@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -127,7 +129,7 @@ fun MainContainer() {
                       verticalArrangement = Arrangement.Center,
                       horizontalAlignment = Alignment.CenterHorizontally,
                       modifier = Modifier.weight(1f).fillMaxSize()) {
-                        VideoUrlInput(fetchVideoInfo)
+                        VideoUrlInput(fetchVideoInfo, Modifier.width(350.dp))
                       }
                 }
               }
@@ -137,7 +139,7 @@ fun MainContainer() {
   when (uiState.popup) {
     PopupType.VIDEO_URL -> {
       Dialog(onDismissRequest = { setUiState(uiState.copy(popup = PopupType.NONE)) }) {
-        VideoUrlInput(onSubmit = fetchVideoInfo)
+        Card { VideoUrlInput(onSubmit = fetchVideoInfo) }
       }
     }
     PopupType.NONE -> Unit
