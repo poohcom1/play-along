@@ -2,6 +2,7 @@ package com.poohcom1.playalong
 
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import android.os.StrictMode
 import android.util.Log
@@ -38,11 +39,12 @@ import com.poohcom1.playalong.ui.scenes.ControlPanel
 import com.poohcom1.playalong.ui.scenes.PlayerController
 import com.poohcom1.playalong.ui.theme.PlayAlongTheme
 import com.poohcom1.playalong.utils.TempoTapCalculator
-import com.poohcom1.playalong.utils.getVideoInfo
+import com.poohcom1.playalong.utils.validateYoutubeUrl
 import com.poohcom1.playalong.viewmodels.PopupType
 import com.poohcom1.playalong.viewmodels.UiState
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
+import com.yausername.youtubedl_android.YoutubeDLRequest
 import com.yausername.youtubedl_android.mapper.VideoInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -89,16 +91,40 @@ fun MainContainer() {
   val tempoTapCalculator = remember { TempoTapCalculator(2000, true) }
   val mediaPlayer = remember { MediaPlayer.create(context, R.raw.metronome_click) }
 
-  val fetchVideoInfo: (String) -> Unit = {
-    loading = true
+  println("Loading: $loading")
 
-    // Youtube DL Coroutine
+  val fetchVideoInfo: (String) -> Unit = { url ->
     composableScope.launch(Dispatchers.IO) {
-      Looper.prepare()
+      try {
+        if (!validateYoutubeUrl(url)) {
+          throw Exception("Invalid url: $url")
+        }
 
-      getVideoInfo(it)
-          .onSuccess { videoInfo = it }
-          .onFailure { Toast.makeText(context, "Error: $it", Toast.LENGTH_LONG).show() }
+        loading = true
+
+        val getUrlRequest = YoutubeDLRequest(url)
+        getUrlRequest.addOption("-f", "b")
+        getUrlRequest.addOption("--no-playlist")
+
+        val info = YoutubeDL.getInstance().getInfo(getUrlRequest)
+        if (info.url != null) {
+          videoInfo = info
+        } else {
+          throw Exception("Unable to fetch url: $url. Source url is missing")
+        }
+      } catch (e: Exception) {
+        val errMsg =
+            when (e) {
+              is YoutubeDLException -> "Unable to fetch url: $url"
+              is InterruptedException -> "Song fetch interrupted"
+              is YoutubeDL.CanceledException -> "Song fetch canceled"
+              else -> e.message ?: "Unknown error"
+            }
+        Log.e("YoutubeDL", errMsg)
+        Handler(Looper.getMainLooper()).post {
+          Toast.makeText(context, errMsg, Toast.LENGTH_SHORT).show()
+        }
+      }
 
       loading = false
     }
@@ -113,27 +139,30 @@ fun MainContainer() {
   Column(Modifier.padding(8.dp).fillMaxHeight()) {
     ControlPanel(uiState = uiState, onRootStateChanged = setUiState)
 
-    videoInfo?.let { info ->
-      PlayerController(info = info, uiState, onRootStateChanged = setUiState)
+    val url = videoInfo?.url
+    val duration = videoInfo?.duration
+
+    if (url != null && duration != null) {
+      PlayerController(
+          url = url, duration = duration, uiState = uiState, onRootStateChanged = setUiState)
+    } else {
+      Spacer(Modifier.height(8.dp))
+      Surface(
+          tonalElevation = 0.dp,
+          shape = MaterialTheme.shapes.medium,
+          modifier = Modifier.fillMaxSize()) {
+            if (loading) {
+              Text(text = "Loading...")
+            } else {
+              Column(
+                  verticalArrangement = Arrangement.Center,
+                  horizontalAlignment = Alignment.CenterHorizontally,
+                  modifier = Modifier.weight(1f).fillMaxSize()) {
+                    VideoUrlInput(fetchVideoInfo, Modifier.width(350.dp))
+                  }
+            }
+          }
     }
-        ?: run {
-          Spacer(Modifier.height(8.dp))
-          Surface(
-              tonalElevation = 0.dp,
-              shape = MaterialTheme.shapes.medium,
-              modifier = Modifier.fillMaxSize()) {
-                if (loading) {
-                  Text(text = "Loading...")
-                } else {
-                  Column(
-                      verticalArrangement = Arrangement.Center,
-                      horizontalAlignment = Alignment.CenterHorizontally,
-                      modifier = Modifier.weight(1f).fillMaxSize()) {
-                        VideoUrlInput(fetchVideoInfo, Modifier.width(350.dp))
-                      }
-                }
-              }
-        }
   }
 
   when (uiState.popup) {

@@ -13,16 +13,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.poohcom1.playalong.ui.components.VideoPlayer
 import com.poohcom1.playalong.viewmodels.UiState
-import com.yausername.youtubedl_android.mapper.VideoInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerController(info: VideoInfo, uiState: UiState, onRootStateChanged: (UiState) -> Unit) {
-  var loopRange: LongRange by remember { mutableStateOf(0L..info.duration * 1000) }
+fun PlayerController(
+    url: String,
+    duration: Int,
+    uiState: UiState,
+    onRootStateChanged: (UiState) -> Unit
+) {
+  var loopRange: LongRange by remember { mutableStateOf(0L..duration * 1000) }
 
   var isSeeking by remember { mutableStateOf(false) }
   var wasPlayingBeforeSeek by remember { mutableStateOf(false) }
@@ -32,7 +35,7 @@ fun PlayerController(info: VideoInfo, uiState: UiState, onRootStateChanged: (UiS
       horizontalAlignment = Alignment.CenterHorizontally) {
         Column {
           VideoPlayer(
-              info.url!!,
+              url,
               loopRange,
               120f,
               playing = uiState.playing,
@@ -51,7 +54,7 @@ fun PlayerController(info: VideoInfo, uiState: UiState, onRootStateChanged: (UiS
                 }
                 loopRange = it.start.toLong() * 1000..it.endInclusive.toLong() * 1000
               },
-              valueRange = 0f..info.duration.toFloat(),
+              valueRange = 0f..duration.toFloat(),
               onValueChangeFinished = {
                 isSeeking = false
                 if (wasPlayingBeforeSeek) {
@@ -59,14 +62,8 @@ fun PlayerController(info: VideoInfo, uiState: UiState, onRootStateChanged: (UiS
                   onRootStateChanged(uiState.copy(playing = true))
                 }
               },
-              steps = info.duration,
+              steps = duration,
           )
         }
       }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun Preview() {
-  PlayerController(VideoInfo(), UiState(), onRootStateChanged = {})
 }
