@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.poohcom1.playalong.ui.components.Loading
 import com.poohcom1.playalong.ui.components.VideoUrlInput
 import com.poohcom1.playalong.ui.scenes.ControlPanel
 import com.poohcom1.playalong.ui.scenes.PlayerController
@@ -151,16 +151,16 @@ fun MainContainer() {
           tonalElevation = 0.dp,
           shape = MaterialTheme.shapes.medium,
           modifier = Modifier.fillMaxSize()) {
-            if (loading) {
-              Text(text = "Loading...")
-            } else {
-              Column(
-                  verticalArrangement = Arrangement.Center,
-                  horizontalAlignment = Alignment.CenterHorizontally,
-                  modifier = Modifier.weight(1f).fillMaxSize()) {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f).fillMaxSize()) {
+                  if (loading) {
+                    Loading()
+                  } else {
                     VideoUrlInput(fetchVideoInfo, Modifier.width(350.dp))
                   }
-            }
+                }
           }
     }
   }
