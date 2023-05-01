@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.unit.dp
+import com.poohcom1.playalong.utils.validateYoutubeUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,9 +50,11 @@ fun VideoUrlInput(onSubmit: (String) -> Unit, modifier: Modifier = Modifier) {
           }) {
             Icon(Icons.Filled.ContentPaste, contentDescription = "Paste url")
           }
-      Button(onClick = { onSubmit(youtubeUrl) }, enabled = youtubeUrl.isNotEmpty()) {
-        Text(text = "Load")
-      }
+      Button(
+          onClick = { onSubmit(youtubeUrl) },
+          enabled = youtubeUrl.isNotEmpty() && validateYoutubeUrl(youtubeUrl)) {
+            Text(text = "Load")
+          }
     }
   }
 }

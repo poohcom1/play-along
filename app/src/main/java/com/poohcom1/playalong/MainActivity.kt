@@ -34,18 +34,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.poohcom1.playalong.ui.components.Loading
+import com.poohcom1.playalong.ui.components.LoopRangeSelector
+import com.poohcom1.playalong.ui.components.VideoPlayer
 import com.poohcom1.playalong.ui.components.VideoUrlInput
 import com.poohcom1.playalong.ui.scenes.ControlPanel
-import com.poohcom1.playalong.ui.scenes.PlayerController
 import com.poohcom1.playalong.ui.theme.PlayAlongTheme
 import com.poohcom1.playalong.utils.TempoTapCalculator
 import com.poohcom1.playalong.utils.validateYoutubeUrl
 import com.poohcom1.playalong.viewmodels.PopupType
+import com.poohcom1.playalong.viewmodels.RootState
 import com.poohcom1.playalong.viewmodels.UiState
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
 import com.yausername.youtubedl_android.YoutubeDLRequest
-import com.yausername.youtubedl_android.mapper.VideoInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -53,7 +54,6 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
-    // TODO: wtf is this for?
     val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
     StrictMode.setThreadPolicy(policy)
 
@@ -80,18 +80,13 @@ fun MainContainer() {
   val context = LocalContext.current
   val composableScope = rememberCoroutineScope()
 
-  // Rendering states
-  var loading by remember { mutableStateOf(false) }
-  var videoInfo by remember { mutableStateOf<VideoInfo?>(null) }
-
   // States
   val (uiState, setUiState) = remember { mutableStateOf(UiState()) }
+  var rootState by remember { mutableStateOf(RootState()) }
 
   // Dependencies
   val tempoTapCalculator = remember { TempoTapCalculator(2000, true) }
   val mediaPlayer = remember { MediaPlayer.create(context, R.raw.metronome_click) }
-
-  println("Loading: $loading")
 
   val fetchVideoInfo: (String) -> Unit = { url ->
     composableScope.launch(Dispatchers.IO) {
@@ -100,7 +95,7 @@ fun MainContainer() {
           throw Exception("Invalid url: $url")
         }
 
-        loading = true
+        setUiState(uiState.copy(loading = true))
 
         val getUrlRequest = YoutubeDLRequest(url)
         getUrlRequest.addOption("-f", "b")
@@ -108,7 +103,7 @@ fun MainContainer() {
 
         val info = YoutubeDL.getInstance().getInfo(getUrlRequest)
         if (info.url != null) {
-          videoInfo = info
+          rootState = rootState.copy(videoInfo = info, loopRangeMs = 0L..(info.duration * 1000))
         } else {
           throw Exception("Unable to fetch url: $url. Source url is missing")
         }
@@ -126,26 +121,40 @@ fun MainContainer() {
         }
       }
 
-      loading = false
+      setUiState(uiState.copy(loading = false))
     }
   }
 
-  LaunchedEffect(uiState) {
-    if (uiState.player != null) {
-      tempoTapCalculator.player = uiState.player
+  LaunchedEffect(rootState.player) {
+    if (rootState.player != null) {
+      tempoTapCalculator.player = rootState.player
     }
   }
 
   Column(Modifier.padding(8.dp).fillMaxHeight()) {
-    ControlPanel(uiState = uiState, onRootStateChanged = setUiState)
+    ControlPanel(uiState = uiState, onUiStateChange = setUiState, rootState = rootState)
 
-    val url = videoInfo?.url
-    val duration = videoInfo?.duration
-
-    if (url != null && duration != null) {
-      PlayerController(
-          url = url, duration = duration, uiState = uiState, onRootStateChanged = setUiState)
+    val videoInfo = rootState.videoInfo
+    if (videoInfo != null) {
+      // Song view
+      Column(
+          Modifier.padding(horizontal = 128.dp, vertical = 16.dp),
+          horizontalAlignment = Alignment.CenterHorizontally) {
+            VideoPlayer(
+                url = videoInfo.url!!,
+                loopRange = rootState.loopRangeMs,
+                tempo = 120f,
+                playing = uiState.playing,
+                onPlayingSet = { setUiState(uiState.copy(playing = it)) },
+                onPlayerSet = { rootState = rootState.copy(player = it) })
+            Spacer(modifier = Modifier.height(16.dp))
+            LoopRangeSelector(
+                range = rootState.loopRangeMs,
+                maxDurationMs = videoInfo.duration * 1000,
+                onRangeChange = { rootState = rootState.copy(loopRangeMs = it) })
+          }
     } else {
+      // Init view
       Spacer(Modifier.height(8.dp))
       Surface(
           tonalElevation = 0.dp,
@@ -155,7 +164,7 @@ fun MainContainer() {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(1f).fillMaxSize()) {
-                  if (loading) {
+                  if (uiState.loading) {
                     Loading()
                   } else {
                     VideoUrlInput(fetchVideoInfo, Modifier.width(350.dp))

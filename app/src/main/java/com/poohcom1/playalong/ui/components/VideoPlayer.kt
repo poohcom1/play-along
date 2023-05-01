@@ -1,10 +1,13 @@
 package com.poohcom1.playalong.ui.components
 
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
@@ -17,12 +20,13 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun VideoPlayer(
+    modifier: Modifier = Modifier,
     url: String,
     loopRange: LongRange,
     tempo: Float,
     playing: Boolean,
     onPlayingSet: (Boolean) -> Unit,
-    onPlayerSet: (ExoPlayer?) -> Unit = {}
+    onPlayerSet: (ExoPlayer?) -> Unit
 ) {
   val context = LocalContext.current
   val measureDelay = 60f / tempo * 1000
@@ -70,6 +74,7 @@ fun VideoPlayer(
   }
 
   // Render
+
   DisposableEffect(
       AndroidView(
           factory = {
@@ -78,12 +83,15 @@ fun VideoPlayer(
               resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
               setShowNextButton(false)
               setShowPreviousButton(false)
+              // FIXME: Controller is getting clipped by the 16dp padding
             }
-          })) {
-        onDispose {
-          exoplayer.release()
-          onPlayerSet(null)
-          onPlayingSet(false)
-        }
-      }
+          },
+          modifier = modifier.height(200.dp)),
+  ) {
+    onDispose {
+      exoplayer.release()
+      onPlayerSet(null)
+      onPlayingSet(false)
+    }
+  }
 }
