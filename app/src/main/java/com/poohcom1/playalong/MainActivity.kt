@@ -139,7 +139,8 @@ fun MainContainer() {
       // Song view
       Column(
           Modifier.padding(horizontal = 128.dp, vertical = 16.dp),
-          horizontalAlignment = Alignment.CenterHorizontally) {
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.SpaceBetween) {
             VideoPlayer(
                 url = videoInfo.url!!,
                 loopRange = rootState.loopRangeMs,
@@ -147,7 +148,6 @@ fun MainContainer() {
                 playing = uiState.playing,
                 onPlayingSet = { setUiState(uiState.copy(playing = it)) },
                 onPlayerSet = { rootState = rootState.copy(player = it) })
-            Spacer(modifier = Modifier.height(16.dp))
             LoopRangeSelector(
                 range = rootState.loopRangeMs,
                 maxDurationMs = videoInfo.duration * 1000,

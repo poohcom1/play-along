@@ -12,11 +12,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.SeekParameters
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
 
 @Composable
 fun VideoPlayer(
@@ -38,13 +40,16 @@ fun VideoPlayer(
   // On url change
   LaunchedEffect(url) {
     exoplayer.setMediaItem(MediaItem.fromUri(url))
-    exoplayer.prepare()
     exoplayer.repeatMode = ExoPlayer.REPEAT_MODE_ONE
+    exoplayer.setSeekParameters(SeekParameters.CLOSEST_SYNC)
+    exoplayer.prepare()
   }
 
   // On loop section change
   LaunchedEffect(loopRange) {
-    exoplayer.seekTo(loopRange.first)
+    if (abs(exoplayer.currentPosition - loopRange.first) > 1000) {
+      exoplayer.seekTo(loopRange.first)
+    }
 
     withContext(Dispatchers.Main) {
       while (true) {
@@ -86,7 +91,7 @@ fun VideoPlayer(
               // FIXME: Controller is getting clipped by the 16dp padding
             }
           },
-          modifier = modifier.height(200.dp)),
+          modifier = modifier.height(225.dp)),
   ) {
     onDispose {
       exoplayer.release()
