@@ -131,8 +131,15 @@ fun MainContainer() {
     }
   }
 
+  // Render
   Column(Modifier.padding(8.dp).fillMaxHeight()) {
     ControlPanel(uiState = uiState, onUiStateChange = setUiState, rootState = rootState)
+
+    var loopRange by remember { mutableStateOf(0L..0L) }
+
+    LaunchedEffect(rootState.videoInfo) {
+      rootState.videoInfo?.let { loopRange = 0L..(it.duration * 1000) }
+    }
 
     val videoInfo = rootState.videoInfo
     if (videoInfo != null) {
@@ -149,9 +156,10 @@ fun MainContainer() {
                 onPlayingSet = { setUiState(uiState.copy(playing = it)) },
                 onPlayerSet = { rootState = rootState.copy(player = it) })
             LoopRangeSelector(
-                range = rootState.loopRangeMs,
+                range = loopRange,
                 maxDurationMs = videoInfo.duration * 1000,
-                onRangeChange = { rootState = rootState.copy(loopRangeMs = it) })
+                onRangeChange = { loopRange = it },
+                onChangeFinished = { rootState = rootState.copy(loopRangeMs = loopRange) })
           }
     } else {
       // Init view
