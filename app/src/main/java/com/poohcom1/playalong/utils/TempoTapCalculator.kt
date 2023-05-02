@@ -1,6 +1,7 @@
 package com.poohcom1.playalong.utils
 
 import android.os.SystemClock
+import com.poohcom1.playalong.datatypes.Tempo
 import com.poohcom1.playalong.interfaces.Clock
 
 class TempoTapCalculator(
@@ -16,6 +17,8 @@ class TempoTapCalculator(
     private set
   var msOffset = 0L
     private set
+
+  val tempo = Tempo(msPerBeat.toDouble(), msOffset.toDouble())
 
   private val beatDelaysMs = ArrayList<Long>()
   private var lastTimeStamp = 0L
