@@ -1,6 +1,7 @@
 package com.poohcom1.playalong
 
-import android.media.MediaPlayer
+import android.media.AudioAttributes
+import android.media.SoundPool
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -21,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,22 +35,26 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.poohcom1.playalong.datatypes.Tempo
 import com.poohcom1.playalong.ui.components.Loading
 import com.poohcom1.playalong.ui.components.LoopRangeSelector
+import com.poohcom1.playalong.ui.components.TempoPicker
 import com.poohcom1.playalong.ui.components.VideoPlayer
 import com.poohcom1.playalong.ui.components.VideoUrlInput
 import com.poohcom1.playalong.ui.scenes.ControlPanel
 import com.poohcom1.playalong.ui.theme.PlayAlongTheme
+import com.poohcom1.playalong.utils.Metronome
 import com.poohcom1.playalong.utils.TempoTapCalculator
 import com.poohcom1.playalong.utils.validateYoutubeUrl
-import com.poohcom1.playalong.viewmodels.PopupType
 import com.poohcom1.playalong.viewmodels.RootState
 import com.poohcom1.playalong.viewmodels.UiState
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,17 +91,24 @@ fun MainContainer() {
   var rootState by remember { mutableStateOf(RootState()) }
 
   // Dependencies
-  val tempoTapCalculator = remember { TempoTapCalculator(2000, true) }
-  val mediaPlayer = remember { MediaPlayer.create(context, R.raw.metronome_click) }
+  val tempoTapCalculator = remember { TempoTapCalculator() }
 
+  // Callbacks
   val fetchVideoInfo: (String) -> Unit = { url ->
+    val currentUiState =
+        uiState.copy(
+            loading = true,
+            popup =
+                if (uiState.popup == UiState.PopupType.VIDEO_URL) UiState.PopupType.NONE
+                else uiState.popup)
+
     composableScope.launch(Dispatchers.IO) {
       try {
         if (!validateYoutubeUrl(url)) {
           throw Exception("Invalid url: $url")
         }
 
-        setUiState(uiState.copy(loading = true))
+        setUiState(currentUiState)
 
         val getUrlRequest = YoutubeDLRequest(url)
         getUrlRequest.addOption("-f", "b")
@@ -121,19 +134,46 @@ fun MainContainer() {
         }
       }
 
-      setUiState(uiState.copy(loading = false))
+      setUiState(currentUiState.copy(loading = false))
     }
   }
 
-  LaunchedEffect(rootState.player) {
-    if (rootState.player != null) {
-      tempoTapCalculator.player = rootState.player
+  // Metronome
+  val metronomeSoundPool = remember {
+    SoundPool.Builder()
+        .setMaxStreams(4)
+        .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build())
+        .build()
+  }
+  val soundId = remember { metronomeSoundPool.load(context, R.raw.metronome_click, 1) }
+
+  DisposableEffect(metronomeSoundPool) { onDispose { metronomeSoundPool.release() } }
+
+  LaunchedEffect(rootState, uiState.playing) {
+    val videoInfo = rootState.videoInfo
+    val player = rootState.player
+
+    if (videoInfo != null && player != null && uiState.playing) {
+      val metronome = Metronome(rootState.tempo)
+
+      withContext(Dispatchers.Main) {
+        while (true) {
+          if (metronome.tick(player.currentPosition)) {
+            metronomeSoundPool.play(soundId, 1f, 1f, 1, 0, 1f)
+          }
+          delay(10)
+        }
+      }
     }
   }
 
   // Render
   Column(Modifier.padding(8.dp).fillMaxHeight()) {
-    ControlPanel(uiState = uiState, onUiStateChange = setUiState, rootState = rootState)
+    ControlPanel(
+        uiState = uiState,
+        onUiStateChange = setUiState,
+        rootState = rootState,
+        onRootStateChange = { rootState = it })
 
     var loopRange by remember { mutableStateOf(0L..0L) }
 
@@ -182,13 +222,35 @@ fun MainContainer() {
     }
   }
 
+  val hidePopup = { setUiState(uiState.copy(popup = UiState.PopupType.NONE)) }
+
   when (uiState.popup) {
-    PopupType.VIDEO_URL -> {
-      Dialog(onDismissRequest = { setUiState(uiState.copy(popup = PopupType.NONE)) }) {
-        Card { VideoUrlInput(onSubmit = fetchVideoInfo) }
+    UiState.PopupType.VIDEO_URL -> {
+      Dialog(onDismissRequest = hidePopup) { Card { VideoUrlInput(onSubmit = fetchVideoInfo) } }
+    }
+    UiState.PopupType.TEMPO_PICKER -> {
+      var tempo by remember { mutableStateOf(Tempo()) }
+
+      Dialog(onDismissRequest = hidePopup) {
+        Card {
+          TempoPicker(
+              tempo = rootState.tempo,
+              onTempoChange = {
+                rootState = rootState.copy(tempo = it)
+                hidePopup()
+              },
+              tempoTapValue = tempo,
+              onTempoTap = {
+                tempoTapCalculator.tap(rootState.player?.currentPosition ?: 0L)
+                tempo =
+                    tempo.copy(
+                        msPerBeat = tempoTapCalculator.msPerBeat.toDouble(),
+                        msOffset = tempoTapCalculator.msOffset.toDouble())
+              })
+        }
       }
     }
-    PopupType.NONE -> Unit
+    UiState.PopupType.NONE -> Unit
   }
 }
 

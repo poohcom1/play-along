@@ -1,49 +1,39 @@
 package com.poohcom1.playalong.utils
 
 import android.os.SystemClock
-import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import com.google.android.exoplayer2.ExoPlayer
+import com.poohcom1.playalong.interfaces.Clock
 
-class TempoTapCalculator(private val maxDelayMs: Long, private val roundTempo: Boolean) {
-    private val beatDelaysMs = ArrayList<Long>()
+class TempoTapCalculator(
+    private val clock: Clock =
+        object : Clock {
+          override fun currentTimeMs(): Long {
+            return SystemClock.elapsedRealtime()
+          }
+        },
+    private val maxDelayMs: Long = 2000
+) {
+  var msPerBeat = 0L
+    private set
+  var msOffset = 0L
+    private set
 
-    private var bpm by mutableStateOf(120.0)
-    private var lastTimeStamp = 0L
+  private val beatDelaysMs = ArrayList<Long>()
+  private var lastTimeStamp = 0L
 
-    var player: ExoPlayer? = null
+  fun tap(offsetMs: Long) {
+    val currentTime = clock.currentTimeMs()
+    val delay = currentTime - lastTimeStamp
+    lastTimeStamp = currentTime
 
-    fun tap(): Double {
-        if (player != null) {
-            Log.d("TempoTapCalculator", "Current position: ${player?.currentPosition ?: 0}")
-        }
-
-        val currentTime = SystemClock.elapsedRealtime()
-        val delay = currentTime - lastTimeStamp
-        lastTimeStamp = currentTime
-
-        if (delay < maxDelayMs) {
-            beatDelaysMs.add(delay)
-        } else {
-            beatDelaysMs.clear()
-        }
-
-        bpm = calculateTempo(beatDelaysMs)
-
-        return if (roundTempo) {
-            bpm.toInt().toDouble()
-        } else {
-            bpm
-        }
-    }
-}
-
-fun calculateTempo(beatDelayMs: List<Long>, defaultBpm: Double = 120.0): Double {
-    if (beatDelayMs.size < 2) {
-        return defaultBpm
+    if (delay < maxDelayMs) {
+      beatDelaysMs.add(delay)
+    } else {
+      beatDelaysMs.clear()
     }
 
-    return 60f * 1000f / beatDelayMs.average()
+    val avgMsPerBeat = beatDelaysMs.average()
+
+    msOffset = (avgMsPerBeat - (offsetMs % avgMsPerBeat)).toLong()
+    msPerBeat = avgMsPerBeat.toLong()
+  }
 }

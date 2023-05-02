@@ -1,6 +1,8 @@
 package com.poohcom1.playalong.viewmodels
 
 import com.google.android.exoplayer2.ExoPlayer
+import com.poohcom1.playalong.datatypes.Tempo
+import com.poohcom1.playalong.utils.msPerBeatToBpm
 import com.yausername.youtubedl_android.mapper.VideoInfo
 
 data class RootState(
@@ -8,4 +10,8 @@ data class RootState(
     val loopRangeMs: LongRange = 0L..0L,
     val videoInfo: VideoInfo? = null,
     val player: ExoPlayer? = null,
-)
+    val metronomeOn: Boolean = false,
+    val tempo: Tempo = Tempo(),
+) {
+  val bpm = msPerBeatToBpm(tempo.msPerBeat)
+}
