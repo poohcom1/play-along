@@ -1,7 +1,5 @@
 package com.poohcom1.playalong
 
-import android.media.AudioAttributes
-import android.media.SoundPool
 import android.os.Bundle
 import android.os.StrictMode
 import android.util.Log
@@ -20,7 +18,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,16 +35,15 @@ import com.poohcom1.playalong.ui.components.LoopRangeSelector
 import com.poohcom1.playalong.ui.components.TempoPicker
 import com.poohcom1.playalong.ui.components.VideoPlayer
 import com.poohcom1.playalong.ui.components.VideoUrlInput
+import com.poohcom1.playalong.ui.media.Metronome
 import com.poohcom1.playalong.ui.scenes.ControlPanel
 import com.poohcom1.playalong.ui.theme.PlayAlongTheme
-import com.poohcom1.playalong.utils.Metronome
 import com.poohcom1.playalong.utils.getYtdlVideoInfo
 import com.poohcom1.playalong.viewmodels.RootState
 import com.poohcom1.playalong.viewmodels.UiState
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -91,7 +87,10 @@ fun MainContainer() {
     composableScope.launch(Dispatchers.IO) {
       getYtdlVideoInfo(url)
           .onSuccess { videoInfo ->
-            withContext(Dispatchers.Main) { rootState = rootState.copy(videoInfo = videoInfo) }
+            withContext(Dispatchers.Main) {
+              rootState =
+                  rootState.copy(videoInfo = videoInfo, loopRangeMs = 0L..videoInfo.duration * 1000)
+            }
           }
           .onFailure { throwable ->
             withContext(Dispatchers.Main) {
@@ -103,34 +102,11 @@ fun MainContainer() {
     }
   }
 
-  // Metronome
-  val metronomeSoundPool = remember {
-    SoundPool.Builder()
-        .setMaxStreams(4)
-        .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build())
-        .build()
-  }
-  val soundId = remember { metronomeSoundPool.load(context, R.raw.metronome_click, 1) }
-
-  DisposableEffect(metronomeSoundPool) { onDispose { metronomeSoundPool.release() } }
-
-  LaunchedEffect(rootState, uiState.playing) {
-    val videoInfo = rootState.videoInfo
-    val player = rootState.player
-
-    if (videoInfo != null && player != null && uiState.playing) {
-      val metronome = Metronome(rootState.tempo)
-
-      withContext(Dispatchers.Main) {
-        while (true) {
-          if (metronome.tick(player.currentPosition)) {
-            metronomeSoundPool.play(soundId, 1f, 1f, 1, 0, 1f)
-          }
-          delay(10)
-        }
-      }
-    }
-  }
+  Metronome(
+      videoInfo = rootState.videoInfo,
+      player = rootState.player,
+      tempo = rootState.tempo,
+      playing = rootState.metronomeOn && uiState.playing)
 
   // Render
   Column(Modifier.padding(8.dp).fillMaxHeight()) {
