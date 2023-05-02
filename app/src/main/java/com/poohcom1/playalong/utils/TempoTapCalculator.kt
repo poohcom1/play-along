@@ -3,6 +3,7 @@ package com.poohcom1.playalong.utils
 import android.os.SystemClock
 import com.poohcom1.playalong.datatypes.Tempo
 import com.poohcom1.playalong.interfaces.Clock
+import kotlin.math.max
 
 class TempoTapCalculator(
     private val clock: Clock =
@@ -13,7 +14,7 @@ class TempoTapCalculator(
         },
     private val maxDelayMs: Long = 2000
 ) {
-  var msPerBeat = 0L
+  var msPerBeat = 500L
     private set
   var msOffset = 0L
     private set
@@ -26,17 +27,18 @@ class TempoTapCalculator(
   fun tap(offsetMs: Long) {
     val currentTime = clock.currentTimeMs()
     val delay = currentTime - lastTimeStamp
-    lastTimeStamp = currentTime
 
     if (delay < maxDelayMs) {
-      beatDelaysMs.add(delay)
+      if (lastTimeStamp != 0L) beatDelaysMs.add(delay)
     } else {
       beatDelaysMs.clear()
     }
 
+    lastTimeStamp = currentTime
+
     val avgMsPerBeat = beatDelaysMs.average()
 
     msOffset = (avgMsPerBeat - (offsetMs % avgMsPerBeat)).toLong()
-    msPerBeat = avgMsPerBeat.toLong()
+    msPerBeat = max(avgMsPerBeat.toLong(), 250L)
   }
 }

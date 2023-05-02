@@ -11,7 +11,7 @@ data class RootState(
     val videoInfo: VideoInfo? = null,
     val player: ExoPlayer? = null,
     val metronomeOn: Boolean = false,
-    val tempo: Tempo = Tempo(),
+    val tempo: Tempo = Tempo.fromBpm(130).copy(msOffset = 94.0),
 ) {
   val bpm = msPerBeatToBpm(tempo.msPerBeat)
 }
