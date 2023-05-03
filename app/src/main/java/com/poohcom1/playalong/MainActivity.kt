@@ -123,7 +123,7 @@ fun MainContainer() {
     }
 
     val videoInfo = rootState.videoInfo
-    if (videoInfo != null) {
+    if (videoInfo != null && !uiState.loading) {
       // Song view
       Column(
           Modifier.padding(horizontal = 128.dp, vertical = 16.dp),
