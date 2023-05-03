@@ -27,6 +27,7 @@ fun VideoPlayer(
     loopRange: LongRange,
     tempo: Float,
     playing: Boolean,
+    volume: Float = 0.5f,
     onPlayingSet: (Boolean) -> Unit,
     onPlayerSet: (ExoPlayer?) -> Unit
 ) {
@@ -61,6 +62,8 @@ fun VideoPlayer(
       }
     }
   }
+
+  LaunchedEffect(volume) { exoplayer.volume = volume }
 
   // On play/pause
   LaunchedEffect(playing) {

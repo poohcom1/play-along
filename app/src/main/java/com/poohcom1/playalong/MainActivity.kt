@@ -1,9 +1,6 @@
 package com.poohcom1.playalong
 
-import android.media.MediaPlayer
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.os.StrictMode
 import android.util.Log
 import android.widget.Toast
@@ -35,20 +32,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.poohcom1.playalong.ui.components.Loading
 import com.poohcom1.playalong.ui.components.LoopRangeSelector
+import com.poohcom1.playalong.ui.components.TempoPicker
 import com.poohcom1.playalong.ui.components.VideoPlayer
 import com.poohcom1.playalong.ui.components.VideoUrlInput
+import com.poohcom1.playalong.ui.media.Metronome
 import com.poohcom1.playalong.ui.scenes.ControlPanel
 import com.poohcom1.playalong.ui.theme.PlayAlongTheme
-import com.poohcom1.playalong.utils.TempoTapCalculator
-import com.poohcom1.playalong.utils.validateYoutubeUrl
-import com.poohcom1.playalong.viewmodels.PopupType
+import com.poohcom1.playalong.utils.getYtdlVideoInfo
 import com.poohcom1.playalong.viewmodels.RootState
 import com.poohcom1.playalong.viewmodels.UiState
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
-import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,59 +78,43 @@ fun MainContainer() {
   val composableScope = rememberCoroutineScope()
 
   // States
-  val (uiState, setUiState) = remember { mutableStateOf(UiState()) }
+  var uiState by remember { mutableStateOf(UiState()) }
   var rootState by remember { mutableStateOf(RootState()) }
 
-  // Dependencies
-  val tempoTapCalculator = remember { TempoTapCalculator(2000, true) }
-  val mediaPlayer = remember { MediaPlayer.create(context, R.raw.metronome_click) }
-
+  // Callbacks
   val fetchVideoInfo: (String) -> Unit = { url ->
+    uiState = uiState.copy(loading = true)
     composableScope.launch(Dispatchers.IO) {
-      try {
-        if (!validateYoutubeUrl(url)) {
-          throw Exception("Invalid url: $url")
-        }
-
-        setUiState(uiState.copy(loading = true))
-
-        val getUrlRequest = YoutubeDLRequest(url)
-        getUrlRequest.addOption("-f", "b")
-        getUrlRequest.addOption("--no-playlist")
-
-        val info = YoutubeDL.getInstance().getInfo(getUrlRequest)
-        if (info.url != null) {
-          rootState = rootState.copy(videoInfo = info, loopRangeMs = 0L..(info.duration * 1000))
-        } else {
-          throw Exception("Unable to fetch url: $url. Source url is missing")
-        }
-      } catch (e: Exception) {
-        val errMsg =
-            when (e) {
-              is YoutubeDLException -> "Unable to fetch url: $url"
-              is InterruptedException -> "Song fetch interrupted"
-              is YoutubeDL.CanceledException -> "Song fetch canceled"
-              else -> e.message ?: "Unknown error"
+      getYtdlVideoInfo(url)
+          .onSuccess { videoInfo ->
+            withContext(Dispatchers.Main) {
+              rootState =
+                  rootState.copy(videoInfo = videoInfo, loopRangeMs = 0L..videoInfo.duration * 1000)
             }
-        Log.e("YoutubeDL", errMsg)
-        Handler(Looper.getMainLooper()).post {
-          Toast.makeText(context, errMsg, Toast.LENGTH_SHORT).show()
-        }
-      }
+          }
+          .onFailure { throwable ->
+            withContext(Dispatchers.Main) {
+              Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
+            }
+          }
 
-      setUiState(uiState.copy(loading = false))
+      uiState = uiState.copy(loading = false)
     }
   }
 
-  LaunchedEffect(rootState.player) {
-    if (rootState.player != null) {
-      tempoTapCalculator.player = rootState.player
-    }
-  }
+  Metronome(
+      videoInfo = rootState.videoInfo,
+      player = rootState.player,
+      tempo = rootState.tempo,
+      playing = rootState.metronomeOn && uiState.playing)
 
   // Render
   Column(Modifier.padding(8.dp).fillMaxHeight()) {
-    ControlPanel(uiState = uiState, onUiStateChange = setUiState, rootState = rootState)
+    ControlPanel(
+        uiState = uiState,
+        onUiStateChange = { uiState = it },
+        rootState = rootState,
+        onRootStateChange = { rootState = it })
 
     var loopRange by remember { mutableStateOf(0L..0L) }
 
@@ -153,7 +134,7 @@ fun MainContainer() {
                 loopRange = rootState.loopRangeMs,
                 tempo = 120f,
                 playing = uiState.playing,
-                onPlayingSet = { setUiState(uiState.copy(playing = it)) },
+                onPlayingSet = { uiState = uiState.copy(playing = it) },
                 onPlayerSet = { rootState = rootState.copy(player = it) })
             LoopRangeSelector(
                 range = loopRange,
@@ -182,13 +163,32 @@ fun MainContainer() {
     }
   }
 
+  val hidePopup = { uiState = uiState.copy(popup = UiState.PopupType.NONE) }
+
   when (uiState.popup) {
-    PopupType.VIDEO_URL -> {
-      Dialog(onDismissRequest = { setUiState(uiState.copy(popup = PopupType.NONE)) }) {
-        Card { VideoUrlInput(onSubmit = fetchVideoInfo) }
+    UiState.PopupType.VIDEO_URL -> {
+      Dialog(onDismissRequest = hidePopup) {
+        Card {
+          VideoUrlInput(
+              onSubmit = {
+                hidePopup()
+                fetchVideoInfo(it)
+              })
+        }
       }
     }
-    PopupType.NONE -> Unit
+    UiState.PopupType.TEMPO_PICKER -> {
+      Dialog(onDismissRequest = hidePopup) {
+        Card {
+          TempoPicker(
+              tempo = rootState.tempo,
+              onTempoChange = { rootState = rootState.copy(tempo = it) },
+              onDismiss = hidePopup,
+              player = rootState.player)
+        }
+      }
+    }
+    UiState.PopupType.NONE -> Unit
   }
 }
 
