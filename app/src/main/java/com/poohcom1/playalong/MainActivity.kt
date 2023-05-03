@@ -30,6 +30,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.poohcom1.playalong.states.RootState
+import com.poohcom1.playalong.states.UiState
 import com.poohcom1.playalong.ui.components.Loading
 import com.poohcom1.playalong.ui.components.LoopRangeSelector
 import com.poohcom1.playalong.ui.components.TempoPicker
@@ -39,8 +41,6 @@ import com.poohcom1.playalong.ui.media.Metronome
 import com.poohcom1.playalong.ui.scenes.ControlPanel
 import com.poohcom1.playalong.ui.theme.PlayAlongTheme
 import com.poohcom1.playalong.utils.getYtdlVideoInfo
-import com.poohcom1.playalong.viewmodels.RootState
-import com.poohcom1.playalong.viewmodels.UiState
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
 import kotlinx.coroutines.Dispatchers

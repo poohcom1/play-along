@@ -1,4 +1,4 @@
-package com.poohcom1.playalong.viewmodels
+package com.poohcom1.playalong.states
 
 import com.google.android.exoplayer2.ExoPlayer
 import com.poohcom1.playalong.datatypes.Tempo
