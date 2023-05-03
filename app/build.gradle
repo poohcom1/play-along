@@ -28,6 +28,13 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            buildConfigField("long", "DEFAULT_TEMPO", "120")
+            buildConfigField("double", "DEFAULT_MS_OFFSET", "0.0")
+        }
+        debug {
+            buildConfigField("long", "DEFAULT_TEMPO", "130")
+            buildConfigField("double", "DEFAULT_MS_OFFSET", "94.0")
         }
     }
     compileOptions {
@@ -39,6 +46,7 @@ android {
     }
     buildFeatures {
         compose true
+        buildConfig true
     }
     composeOptions {
         kotlinCompilerExtensionVersion '1.4.0'
