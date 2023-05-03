@@ -1,4 +1,4 @@
-package com.poohcom1.playalong.viewmodels
+package com.poohcom1.playalong.states
 
 data class UiState(
     val loading: Boolean = false,

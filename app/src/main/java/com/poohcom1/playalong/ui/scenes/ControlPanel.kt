@@ -28,8 +28,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import com.poohcom1.playalong.R
-import com.poohcom1.playalong.viewmodels.RootState
-import com.poohcom1.playalong.viewmodels.UiState
+import com.poohcom1.playalong.states.RootState
+import com.poohcom1.playalong.states.UiState
 
 @Composable
 fun ControlPanel(
