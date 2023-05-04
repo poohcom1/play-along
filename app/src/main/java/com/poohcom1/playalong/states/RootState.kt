@@ -15,6 +15,7 @@ data class RootState(
 
     // Controller states
     val speed: Float = 1.0f,
+    val loopOn: Boolean = false,
     val loopRangeMs: LongRange = 0L..0L,
     val metronomeOn: Boolean = false,
     val tempo: Tempo =

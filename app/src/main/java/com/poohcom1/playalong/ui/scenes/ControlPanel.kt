@@ -11,9 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.MusicVideo
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +20,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -32,6 +35,9 @@ import androidx.core.graphics.drawable.toBitmap
 import com.poohcom1.playalong.R
 import com.poohcom1.playalong.states.RootState
 import com.poohcom1.playalong.states.UiState
+import com.poohcom1.playalong.ui.components.LoopRangeSelector
+import com.poohcom1.playalong.ui.components.VerticalDivider
+import com.yausername.youtubedl_android.mapper.VideoInfo
 
 @Composable
 fun ControlPanel(
@@ -40,7 +46,6 @@ fun ControlPanel(
     rootState: RootState,
     onRootStateChange: (RootState) -> Unit,
 ) {
-  val context = LocalContext.current
   val density = LocalDensity.current
 
   AnimatedVisibility(
@@ -50,63 +55,108 @@ fun ControlPanel(
         Column(Modifier.padding(16.dp)) {
           // Top Control panel
           Surface(tonalElevation = 25.dp, shape = MaterialTheme.shapes.medium) {
-            Row(Modifier.height(50.dp).fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-              val modifier = Modifier.weight(1f / 3f)
+            Row(
+                Modifier.height(50.dp).fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                  // Left
+                  Row() {
+                    TempoPanel(
+                        metronomeOn = rootState.metronomeOn,
+                        onMetronomeOn = { onRootStateChange(rootState.copy(metronomeOn = it)) },
+                        tempo = rootState.bpm.toLong(),
+                        onShowTempoPicker = {
+                          onUiStateChange(uiState.copy(popup = UiState.PopupType.TEMPO_PICKER))
+                        },
+                    )
+                  }
 
-              Row(modifier, horizontalArrangement = Arrangement.Start) {
-                IconButton(
-                    modifier = Modifier.padding(8.dp),
-                    onClick = {
-                      onRootStateChange(rootState.copy(metronomeOn = !rootState.metronomeOn))
-                    }) {
-                      Icon(
-                          ContextCompat.getDrawable(context, R.drawable.metronome)
-                              ?.toBitmap(128, 128)
-                              ?.asImageBitmap()!!,
-                          contentDescription = "Metronome",
-                          tint =
-                              if (rootState.metronomeOn) MaterialTheme.colorScheme.primary
-                              else MaterialTheme.colorScheme.onSurface)
-                    }
+                  VerticalDivider(Modifier.weight(0.05f))
 
-                TextButton(
-                    onClick = {
-                      onUiStateChange(uiState.copy(popup = UiState.PopupType.TEMPO_PICKER))
-                    }) {
-                      Text(
-                          text = "BPM",
-                          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                          fontSize = 12.sp)
-                      Spacer(modifier = Modifier.padding(2.dp))
-                      Text(text = rootState.bpm.toInt().toString())
-                    }
-              }
+                  // Center
+                  Row(Modifier.weight(0.5f)) {
+                    LoopPanel(
+                        loopRange = rootState.loopRangeMs,
+                        onLoopRangeChange = { onRootStateChange(rootState.copy(loopRangeMs = it)) },
+                        loopOn = rootState.loopOn,
+                        onLoopOnSet = { onRootStateChange(rootState.copy(loopOn = it)) },
+                        videoInfo = rootState.videoInfo)
+                  }
 
-              Row(modifier, horizontalArrangement = Arrangement.Center) {
-                IconButton(
-                    onClick = {
-                      if (rootState.player != null) {
-                        onRootStateChange(rootState.copy(playing = !rootState.playing))
-                      }
-                    }) {
-                      if (rootState.playing) {
-                        Icon(Icons.Filled.Pause, contentDescription = "Pause")
-                      } else {
-                        Icon(Icons.Filled.PlayArrow, contentDescription = "Play")
-                      }
-                    }
-              }
-              Row(modifier, horizontalArrangement = Arrangement.End) {
-                IconButton(
-                    onClick = {
-                      onUiStateChange(uiState.copy(popup = UiState.PopupType.VIDEO_URL))
-                    },
-                ) {
-                  Icon(Icons.Filled.MusicVideo, contentDescription = "Load Video")
+                  VerticalDivider(Modifier.weight(0.05f))
+
+                  // Right
+                  IconButton(
+                      onClick = {
+                        onUiStateChange(uiState.copy(popup = UiState.PopupType.VIDEO_URL))
+                      },
+                  ) {
+                    Icon(Icons.Filled.MusicVideo, contentDescription = "Load Video")
+                  }
                 }
-              }
-            }
           }
         }
       }
+}
+
+@Composable
+private fun TempoPanel(
+    metronomeOn: Boolean,
+    onMetronomeOn: (Boolean) -> Unit,
+    tempo: Long,
+    onShowTempoPicker: () -> Unit,
+) {
+  val context = LocalContext.current
+
+  Row(horizontalArrangement = Arrangement.Start) {
+    IconButton(modifier = Modifier.padding(8.dp), onClick = { onMetronomeOn(!metronomeOn) }) {
+      Icon(
+          ContextCompat.getDrawable(context, R.drawable.metronome)
+              ?.toBitmap(128, 128)
+              ?.asImageBitmap()!!,
+          contentDescription = "Metronome",
+          tint =
+              if (metronomeOn) MaterialTheme.colorScheme.primary
+              else MaterialTheme.colorScheme.onSurface)
+    }
+
+    TextButton(onClick = onShowTempoPicker) {
+      Text(
+          text = "BPM",
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+          fontSize = 12.sp)
+      Spacer(modifier = Modifier.padding(2.dp))
+      Text(text = tempo.toString())
+    }
+  }
+}
+
+@Composable
+private fun LoopPanel(
+    loopRange: LongRange,
+    onLoopRangeChange: (LongRange) -> Unit,
+    loopOn: Boolean,
+    onLoopOnSet: (Boolean) -> Unit,
+    videoInfo: VideoInfo?,
+) {
+  Row(horizontalArrangement = Arrangement.Center) {
+    var tempRange by remember { mutableStateOf(loopRange) }
+
+    IconButton(
+        onClick = { onLoopOnSet(!loopOn) },
+    ) {
+      Icon(
+          Icons.Filled.Loop,
+          contentDescription = "Load Video",
+          tint =
+              if (loopOn) MaterialTheme.colorScheme.primary
+              else MaterialTheme.colorScheme.onSurface)
+    }
+
+    LoopRangeSelector(
+        range = tempRange,
+        onRangeChange = { tempRange = it },
+        maxDurationMs = (videoInfo?.duration ?: 0) * 1000,
+        onChangeFinished = { onLoopRangeChange(tempRange) },
+        disabled = !loopOn)
+  }
 }

@@ -89,7 +89,7 @@ class MainActivity : ComponentActivity() {
     WindowCompat.setDecorFitsSystemWindows(window, false)
 
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-      window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+      @Suppress("DEPRECATION") window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
     } else {
       window.insetsController?.apply {
         hide(WindowInsets.Type.statusBars())
@@ -148,6 +148,7 @@ fun MainComponent() {
       VideoPlayer(
           url = videoInfo.url!!,
           loopRange = rootState.loopRangeMs,
+          loopOn = rootState.loopOn,
           tempo = 120f,
           playing = rootState.playing,
           onPlayingSet = { rootState = rootState.copy(playing = it) },
@@ -159,11 +160,6 @@ fun MainComponent() {
           rootState = rootState,
           onRootStateChange = { rootState = it })
     }
-    //      LoopRangeSelector(
-    //          range = loopRange,
-    //          maxDurationMs = videoInfo.duration * 1000,
-    //          onRangeChange = { loopRange = it },
-    //          onChangeFinished = { rootState = rootState.copy(loopRangeMs = loopRange) })
   } else {
     // Init view
     Spacer(Modifier.height(8.dp))

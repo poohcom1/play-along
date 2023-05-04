@@ -21,12 +21,12 @@ import com.google.android.exoplayer2.ui.StyledPlayerView.ControllerVisibilityLis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import kotlin.math.abs
 
 @Composable
 fun VideoPlayer(
     url: String,
     loopRange: LongRange,
+    loopOn: Boolean = false,
     tempo: Float,
     playing: Boolean,
     volume: Float = 0.25f,
@@ -45,23 +45,24 @@ fun VideoPlayer(
   LaunchedEffect(url) {
     exoplayer.setMediaItem(MediaItem.fromUri(url))
     exoplayer.repeatMode = ExoPlayer.REPEAT_MODE_ONE
-    exoplayer.setSeekParameters(SeekParameters.CLOSEST_SYNC)
+    exoplayer.setSeekParameters(SeekParameters.NEXT_SYNC)
     exoplayer.prepare()
   }
 
   // On loop section change
-  LaunchedEffect(loopRange) {
-    Log.d("VideoPlayer", "Loop range: $loopRange")
-
-    if (abs(exoplayer.currentPosition - loopRange.first) > 1000) {
-      exoplayer.seekTo(loopRange.first + 1)
+  LaunchedEffect(loopRange, loopOn) {
+    if (!loopOn) {
+      return@LaunchedEffect
     }
+
+    Log.d("VideoPlayer", "Loop range: $loopRange")
 
     withContext(Dispatchers.Main) {
       while (true) {
-        if (exoplayer.currentPosition !in loopRange) {
-          exoplayer.seekTo(loopRange.first + 1)
-          println("Position: ${exoplayer.currentPosition}, Loop range: $loopRange")
+        if (exoplayer.currentPosition < loopRange.first ||
+            exoplayer.currentPosition > loopRange.last) {
+          exoplayer.seekTo(loopRange.first + 10)
+          Log.d("VideoPlayer", "Looping to ${loopRange.first + 10}")
         }
 
         delay(measureDelay.toLong())
