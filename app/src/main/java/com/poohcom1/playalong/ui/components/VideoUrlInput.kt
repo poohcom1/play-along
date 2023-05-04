@@ -34,12 +34,14 @@ fun VideoUrlInput(onSubmit: (String) -> Unit, modifier: Modifier = Modifier) {
   var youtubeUrl by rememberSaveable { mutableStateOf("") }
 
   Column(modifier = modifier.padding(16.dp)) {
-    OutlinedTextField(
-        value = youtubeUrl,
-        onValueChange = { youtubeUrl = it },
-        placeholder = { Text(text = "Enter youtube URL...") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth())
+    Row {
+      OutlinedTextField(
+          value = youtubeUrl,
+          onValueChange = { youtubeUrl = it },
+          placeholder = { Text(text = "Enter youtube URL...") },
+          singleLine = true,
+          modifier = Modifier.fillMaxWidth())
+    }
     Spacer(Modifier.height(2.dp))
     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
       IconButton(
